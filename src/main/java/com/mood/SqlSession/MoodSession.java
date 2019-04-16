@@ -8,16 +8,20 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class MoodSession {
-    private Excutor excutor = new MoodExcutor();
+    private Excutor excutor ;
 
-    static private MoodSqlSessionFactory myConfiguration = new MoodSqlSessionFactory();
+    private MoodSqlSessionFactory myConfiguration;
 
+    public MoodSession(MoodSqlSessionFactory myConfiguration) {
+        this.myConfiguration = myConfiguration;
+        this.excutor=new MoodExcutor(myConfiguration);
+    }
 
     public <T> T selectOne(Function statement, Object parameter) {
         return excutor.query(statement, parameter);
     }
 
     public <T> T getMapper(Class cla) {
-        return (T) Proxy.newProxyInstance(cla.getClassLoader(), new Class[]{cla}, new MoodMapperProxy(myConfiguration, this));
+        return (T) Proxy.newProxyInstance(cla.getClassLoader(), new Class[]{cla}, new MoodMapperProxy(myConfiguration, this, cla));
     }
 }

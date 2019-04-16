@@ -10,15 +10,20 @@ import java.util.List;
 public class MoodMapperProxy implements InvocationHandler {
     private MoodSession session;
     private MoodSqlSessionFactory sessionFactory;
+    private Class clz;
 
-    public MoodMapperProxy(MoodSqlSessionFactory sessionFactory, MoodSession session) {
+    public MoodMapperProxy(MoodSqlSessionFactory sessionFactory, MoodSession session,Class clz) {
         this.session = session;
         this.sessionFactory = sessionFactory;
+        this.clz=clz;
     }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        MapperBean readMapper = sessionFactory.getXMLMapperBean("UserMapper.xml");
+        System.out.println(clz.getName());
+       // MapperBean readMapper = sessionFactory.getXMLMapperBean("UserMapper.xml");
+        MapperBean readMapper = sessionFactory.mappers.get(clz.getName());
+
         //是否是xml文件对应的接口
         if(!method.getDeclaringClass().getName().equals(readMapper.getInterfaceName())){
             return null;

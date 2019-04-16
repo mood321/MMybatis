@@ -1,5 +1,6 @@
 package com.mood.SqlSession;
 
+import com.mood.annaotation.Query;
 import com.mood.config.Function;
 import com.mood.config.MapperBean;
 import org.dom4j.Document;
@@ -8,17 +9,67 @@ import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
 
 public class MoodSqlSessionFactory {
 
     //加载
     private static final ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+    //所有的
+    static Map<String, MapperBean> mappers = new HashMap<>();
+
+    public MoodSqlSessionFactory(String xmlPath, String beanPath) {
+        initXMl(xmlPath);
+        initBean(beanPath);
+
+    }
+
+    private void initBean(String beanPath) {
+        try {
+            Class clzz = classLoader.loadClass(beanPath);
+            if (!Optional.ofNullable(clzz).isPresent()) {
+                throw new RuntimeException("ClassNotFoundException ");
+            }
+            MapperBean mapperBean = new MapperBean();
+            mapperBean.setInterfaceName(beanPath);
+            Method[] methods = clzz.getDeclaredMethods();
+            for (Method m : methods) {
+                List<Function> list = new ArrayList();
+                //查询方法
+                if (m.isAnnotationPresent(Query.class)) {
+                    Function function = new Function();
+                    function.setSql(m.getAnnotation(Query.class).sql());
+                    function.setResultType(m.getReturnType().newInstance());
+                    function.setFuncName(m.getName());
+                    function.setSqltype("select");
+                    function.setParameterType("int");
+                    list.add(function);
+                }
+                mapperBean.setList(list);
+                list=null;
+            }
+            mappers.put(mapperBean.getInterfaceName(), mapperBean);
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    //加载xml 的mapper
+    private void initXMl(String xmlPath) {
+        MapperBean xmlMapperBean = getXMLMapperBean(xmlPath);
+        mappers.put(xmlMapperBean.getInterfaceName(), xmlMapperBean);
+    }
+    public MoodSession getSession(){
+      return   new MoodSession(this);
+    }
+
 
     //初始化
     public Connection bulider(String path) {
@@ -98,7 +149,7 @@ public class MoodSqlSessionFactory {
             Element rootElement = document.getRootElement();
             bean.setInterfaceName(rootElement.attributeValue("nameSpace").trim());
             List<Function> list = new ArrayList<Function>(); //用来存储方法的List
-            for(Iterator rootIter = rootElement.elementIterator(); rootIter.hasNext();) {//遍历根节点下所有子节点
+            for (Iterator rootIter = rootElement.elementIterator(); rootIter.hasNext(); ) {//遍历根节点下所有子节点
                 Function fun = new Function();    //用来存储一条方法的信息
                 Element e = (Element) rootIter.next();
                 String sqltype = e.getName().trim();
@@ -107,7 +158,7 @@ public class MoodSqlSessionFactory {
                 String resultType = e.attributeValue("resultType").trim();
                 fun.setSqltype(sqltype);
                 fun.setFuncName(funcName);
-                Object newInstance=null;
+                Object newInstance = null;
                 try {
                     newInstance = Class.forName(resultType).newInstance();
                 } catch (InstantiationException e1) {
@@ -131,9 +182,9 @@ public class MoodSqlSessionFactory {
     }
 
     public static void main(String[] args) {
-        MoodSqlSessionFactory myConfiguration = new MoodSqlSessionFactory();
-       // Connection con = myConfiguration.bulider("config.xml");
+       /* MoodSqlSessionFactory myConfiguration = new MoodSqlSessionFactory();
+        // Connection con = myConfiguration.bulider("config.xml");
         MapperBean xmlMapperBean = myConfiguration.getXMLMapperBean("UserMapper.xml");
-        System.out.println(xmlMapperBean);
+        System.out.println(xmlMapperBean);*/
     }
 }

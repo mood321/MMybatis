@@ -10,8 +10,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class MoodExcutor implements Excutor {
-    private MoodSqlSessionFactory xmlConfiguration = new MoodSqlSessionFactory();
-
+    private MoodSqlSessionFactory xmlConfiguration ;
+public MoodExcutor(MoodSqlSessionFactory xmlConfiguration){
+    this.xmlConfiguration=xmlConfiguration;
+}
     @Override
     public <T> T query(Function sql, Object parameter) {
         StatementHandler handler = new StatementHandler(xmlConfiguration);
